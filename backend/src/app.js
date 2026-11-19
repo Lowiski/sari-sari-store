@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -19,11 +20,29 @@ dotenv.config();
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
+// Allowed frontend origins
+const allowedOrigins = [
+  'https://sari-sari-store-sage.vercel.app',
+  'http://localhost:5173',
+];
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
+
+// CORS configuration
 app.use(cors({
-  origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true,
 }));
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,8 +50,10 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Health check
 app.get('/api/health', asyncHandler(async (req, res) => {
   const db = await healthCheck();
+
   res.json({
     success: true,
     message: 'Sari-Sari Analytics API is running.',
@@ -41,6 +62,7 @@ app.get('/api/health', asyncHandler(async (req, res) => {
   });
 }));
 
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', salesRoutes);
@@ -49,6 +71,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportRoutes);
 
+// Error handling
 app.use(notFound);
 app.use(errorHandler);
 
