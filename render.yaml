@@ -1,0 +1,23 @@
+# Render Blueprint for the Express API.
+# Deploy from the repository root; the service itself lives in backend/.
+services:
+  - type: web
+    name: sari-sari-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CLIENT_URL
+        sync: false
